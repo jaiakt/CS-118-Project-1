@@ -56,12 +56,12 @@ int main(int argc, char *argv[])
      error("ERROR on accept");
 
     int n;
+    int ret;
     char filename[256];
     char contentType[100];
-    sprintf(filename, "404.html");
-    sprintf(contentType, "text/html");
     const int BUFF_SIZE = 1024;
     char buffer[BUFF_SIZE + 1];
+    char method[128];
 
     memset(buffer, 0, BUFF_SIZE);  // reset memory
 
@@ -69,6 +69,14 @@ int main(int argc, char *argv[])
     n = read(newsockfd, buffer, BUFF_SIZE);
     if (n < 0) error("ERROR reading from socket");
     printf("%s", buffer);
+
+    memcpy(method, buffer, 4);
+    ret = strcmp(method, "GET ");
+    if (ret == 0) {
+        printf("This is a GET request.\n");
+    } else {
+        printf("This is not a GET request.\n");
+    }
 
     //reply to client
     // n = write(newsockfd, "I got your message", 18);
