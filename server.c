@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>  /* signal name macros, and the kill() prototype */
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
 
 
 void error(char *msg)
@@ -54,18 +57,51 @@ int main(int argc, char *argv[])
 
     int n;
     char filename[256];
-    char buffer[1024];
+    char contentType[100];
+    sprintf(filename, "404.html");
+    sprintf(contentType, "text/html");
+    const int BUFF_SIZE = 1024;
+    char buffer[BUFF_SIZE + 1];
 
-    memset(buffer, 0, 1024);  // reset memory
+    memset(buffer, 0, BUFF_SIZE);  // reset memory
 
     //read client's message
-    n = read(newsockfd, buffer, 1024);
+    n = read(newsockfd, buffer, BUFF_SIZE);
     if (n < 0) error("ERROR reading from socket");
     printf("%s", buffer);
 
     //reply to client
     // n = write(newsockfd, "I got your message", 18);
     // if (n < 0) error("ERROR writing to socket");
+
+    char filesizeStr[7]; 
+
+    struct stat filestat;
+    int filefd = open(filename, O_RDONLY);
+    FILE *filefp;
+    if (filefd < -1 || fstat(filefd, &filestat) < 0) {
+        strcpy (buffer, "HTTP/1.1 400 Bad Request\r\nContent-Length: 1246\r\nContent-Type: text/html\r\nConnection: keep-alive\r\n\r\n");
+        filefp = fopen ("400.html", "r");
+    }
+    else {
+        sprintf(filesizeStr, "%zd", filestat.st_size);
+        filefp = fopen (filename, "r");
+        sprintf(buffer, "HTTP/1.1 200 OK\r\nContent-Length: %s\r\nContent-Type: %s\r\nConnection: keep-alive\r\n\r\n", filesizeStr, contentType);
+    }
+    close(filefd);
+    printf("%s", buffer);
+
+    write (newsockfd, buffer, strlen(buffer));
+
+    int filesize = filestat.st_size + 1;
+    int bytesRead;
+
+    while (filesize > 0) {
+        bytesRead = fread (buffer, sizeof(char), BUFF_SIZE, filefp);
+        filesize -= BUFF_SIZE;
+        write (newsockfd, buffer, bytesRead);
+    }
+    fclose(filefp);
 
     close(newsockfd);  // close connection
     close(sockfd);
