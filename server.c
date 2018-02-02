@@ -11,13 +11,75 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>  /* signal name macros, and the kill() prototype */
-
+#include <ctype.h>
 
 void error(char *msg)
 {
     perror(msg);
     exit(1);
 }
+
+// We want to parse the buffer and save the content type 
+void getContentType(char *buffer, char *contentType, char *filename, char *filetype) 
+{
+    // printf("hello buffer %s\n", buffer);
+
+    int i = 0;
+    int lastSpaceIdx = -1;
+    int filetypeIdx = -1;
+    int filenameIdx = -1;
+    // char filetype[56];
+
+    while (i < strlen(buffer) && buffer[i] != '\n') {
+        i++;
+    }
+    while (i > 0 && buffer[i] != ' ') {
+        i--;
+    }
+    lastSpaceIdx = i;
+    // printf("lastSpaceIdx %d\n", lastSpaceIdx);
+    while (i > 0 && buffer[i] != '.') {
+        i--;
+    }
+    filetypeIdx = i + 1;
+    // printf("filetypeIdx %d\n", filetypeIdx);
+
+    while (i > 0 && buffer[i] != '/') {
+        i--;
+    }
+    // printf("I am at char %c\n", buffer[i]);
+    filenameIdx = i + 1;
+
+    // printf("filetypeIdx: %d, lastSpaceIdx %d\n", filetypeIdx, lastSpaceIdx);
+    // for (int j = filetypeIdx; j < lastSpaceIdx; j++) {
+        // printf("%c\n", buffer[j]);
+    // }
+    memcpy(filetype, buffer + filetypeIdx, (lastSpaceIdx - filetypeIdx));
+    memcpy(filename, buffer + filenameIdx, (lastSpaceIdx - filenameIdx));
+    // printf("Filetype is %s\n", filetype);
+
+    for (int k = 0; k < strlen(filetype); k++) {
+        filetype[k] = tolower(filetype[k]);
+    }
+    // printf("Lowered filetype is %s\n", filetype);
+    if (strcmp(filetype, "html") == 0 || strcmp(filetype, "htm") == 0) {
+        printf("I am an %s file!\n", filetype);
+        sprintf(contentType, "text/html");
+    }
+    else if (strcmp(filetype, "jpg") == 0 || strcmp(filetype, "jpeg") == 0) {
+        printf("I am a %s file!\n", filetype);
+        sprintf(contentType, "image/jpeg");
+    }
+    else if (strcmp(filetype, "gif") == 0) {
+        printf("I am a %s file!\n", filetype);
+        sprintf(contentType, "image/gif");
+    }
+    else {
+        printf("I don't support your filetype!\n");
+        sprintf(contentType, "application/octet-stream");
+    }
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -55,10 +117,17 @@ int main(int argc, char *argv[])
     int n;
     int ret;
     char filename[256];
+    char contentType[128];
     char buffer[1024];
     char method[128];
+    char fileExt[56];
 
+    memset(filename, 0, 256);  // reset memory
+    memset(contentType, 0, 128);  // reset memory
     memset(buffer, 0, 1024);  // reset memory
+    memset(method, 0, 128);  // reset memory
+    memset(fileExt, 0, 56);  // reset memory
+    
 
     //read client's message
     n = read(newsockfd, buffer, 1024);
@@ -68,7 +137,9 @@ int main(int argc, char *argv[])
     memcpy(method, buffer, 4);
     ret = strcmp(method, "GET ");
     if (ret == 0) {
-        printf("This is a GET request.\n");
+        // printf("This is a GET request.\n");
+        getContentType(buffer, contentType, filename, fileExt);
+        printf("buffer is %s, contentType is %s, filename is %s, fileExt is %s\n", buffer, contentType, filename, fileExt);
     } else {
         printf("This is not a GET request.\n");
     }
@@ -82,3 +153,5 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+
