@@ -82,13 +82,29 @@ int main(int argc, char *argv[])
     // n = write(newsockfd, "I got your message", 18);
     // if (n < 0) error("ERROR writing to socket");
 
+    strcpy(buffer, filename);
+
+    int i = 0;
+    int j = 0;
+    while (buffer[i] != '\0') {
+        if (buffer[i] == '%' && buffer[i+1] == '2' && buffer[i+2] == '0') {
+            filename[j] = ' ';
+            i += 3; ++j;
+        }
+        else {
+            filename[j] = buffer[i];
+            ++i; ++j;
+        }
+    }
+
     char filesizeStr[7]; 
 
     struct stat filestat;
     int filefd = open(filename, O_RDONLY);
     FILE *filefp;
     if (filefd < -1 || fstat(filefd, &filestat) < 0) {
-        strcpy (buffer, "HTTP/1.1 400 Bad Request\r\nContent-Length: 1246\r\nContent-Type: text/html\r\nConnection: keep-alive\r\n\r\n");
+        // Hard coded length of 404 page in bytes
+        strcpy (buffer, "HTTP/1.1 404 Not Found\r\nContent-Length: 1246\r\nContent-Type: text/html\r\nConnection: keep-alive\r\n\r\n");
         filefp = fopen ("400.html", "r");
     }
     else {
