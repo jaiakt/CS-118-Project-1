@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
      error("ERROR on accept");
 
     int n;
+    char filename[256];
     char buffer[1024];
 
     memset(buffer, 0, 1024);  // reset memory
