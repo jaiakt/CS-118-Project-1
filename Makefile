@@ -1,17 +1,14 @@
 CC=gcc
 CPPFLAGS=-g -Wall
-USERID=123456789
+USERID=604605757
 
-all: server client
+all: server
 
 server: server.c
 	$(CC) -o server $(CPPFLAGS) server.c
 
-client: client.c
-	$(CC) -o client $(CPPFLAGS) client.c
-
 clean:
-	rm -rf *.o *~ *.gch *.swp *.dSYM server client *.tar.gz
+	rm -rf *.o *~ *.gch *.swp *.dSYM server *.tar.gz
 
 dist: tarball
 
