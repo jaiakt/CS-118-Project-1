@@ -178,8 +178,11 @@ int main(int argc, char *argv[])
     FILE *filefp;
     if (filefd < -1 || fstat(filefd, &filestat) < 0) {
         // Hard coded length of 404 page in bytes
-        strcpy (buffer, "HTTP/1.1 404 Not Found\r\nContent-Length: 1246\r\nContent-Type: text/html\r\nConnection: keep-alive\r\n\r\n");
-        filefp = fopen ("400.html", "r");
+        filefd = open("404.html", O_RDONLY);
+        fstat(filefd, &filestat);
+        sprintf(filesizeStr, "%zd", filestat.st_size);
+        sprintf(buffer, "HTTP/1.1 404 Not Found\r\nContent-Length: %s\r\nContent-Type: text/html\r\nConnection: keep-alive\r\n\r\n", filesizeStr);
+        filefp = fopen ("404.html", "r");
     }
     else {
         sprintf(filesizeStr, "%zd", filestat.st_size);
