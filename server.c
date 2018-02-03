@@ -112,96 +112,98 @@ int main(int argc, char *argv[])
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
         error("ERROR on binding");
 
-    listen(sockfd, 5);  // 5 simultaneous connection at most
+    while (1) {
+        listen(sockfd, 5);  // 5 simultaneous connection at most
 
-    //accept connections
-    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+        //accept connections
+        newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 
-    if (newsockfd < 0)
-     error("ERROR on accept");
+        if (newsockfd < 0)
+         error("ERROR on accept");
 
-    int n;
-    int ret;
-    char filename[256];
-    char contentType[128];
-    const int BUFF_SIZE = 1024;
-    char buffer[BUFF_SIZE + 1];
-    char method[128];
-    char fileExt[56];
+        int n;
+        int ret;
+        char filename[256];
+        char contentType[128];
+        const int BUFF_SIZE = 1024;
+        char buffer[BUFF_SIZE + 1];
+        char method[128];
+        char fileExt[56];
 
-    memset(filename, 0, 256);  // reset memory
-    memset(contentType, 0, 128);  // reset memory
-    memset(buffer, 0, BUFF_SIZE);  // reset memory
-    memset(method, 0, 128);  // reset memory
-    memset(fileExt, 0, 56);  // reset memory
-    
+        memset(filename, 0, 256);  // reset memory
+        memset(contentType, 0, 128);  // reset memory
+        memset(buffer, 0, BUFF_SIZE);  // reset memory
+        memset(method, 0, 128);  // reset memory
+        memset(fileExt, 0, 56);  // reset memory
+        
 
-    //read client's message
-    n = read(newsockfd, buffer, BUFF_SIZE);
-    if (n < 0) error("ERROR reading from socket");
-    printf("%s", buffer);
+        //read client's message
+        n = read(newsockfd, buffer, BUFF_SIZE);
+        if (n < 0) error("ERROR reading from socket");
+        printf("%s", buffer);
 
-    memcpy(method, buffer, 4);
-    ret = strcmp(method, "GET ");
-    if (ret == 0) {
-        // printf("This is a GET request.\n");
-        getContentType(buffer, contentType, filename, fileExt);
-        //printf("buffer is %s, contentType is %s, filename is %s, fileExt is %s\n", buffer, contentType, filename, fileExt);
-    } else {
-        //printf("This is not a GET request.\n");
-    }
+        memcpy(method, buffer, 4);
+        ret = strcmp(method, "GET ");
+        if (ret == 0) {
+            // printf("This is a GET request.\n");
+            getContentType(buffer, contentType, filename, fileExt);
+            //printf("buffer is %s, contentType is %s, filename is %s, fileExt is %s\n", buffer, contentType, filename, fileExt);
+        } else {
+            //printf("This is not a GET request.\n");
+        }
 
-    //reply to client
-    // n = write(newsockfd, "I got your message", 18);
-    // if (n < 0) error("ERROR writing to socket");
-    strcpy(buffer, filename);
+        //reply to client
+        // n = write(newsockfd, "I got your message", 18);
+        // if (n < 0) error("ERROR writing to socket");
+        strcpy(buffer, filename);
 
-    int i = 0;
-    int j = 0;
-    while (buffer[i] != '\0') {
-        if (buffer[i] == '%' && buffer[i+1] == '2' && buffer[i+2] == '0') {
-            filename[j] = ' ';
-            i += 3; ++j;
+        int i = 0;
+        int j = 0;
+        while (buffer[i] != '\0') {
+            if (buffer[i] == '%' && buffer[i+1] == '2' && buffer[i+2] == '0') {
+                filename[j] = ' ';
+                i += 3; ++j;
+            }
+            else {
+                filename[j] = buffer[i];
+                ++i; ++j;
+            }
+        }
+        filename[j] = '\0';
+        ++j;
+
+        char filesizeStr[64]; 
+
+        struct stat filestat;
+        int filefd = open(filename, O_RDONLY);
+        FILE *filefp;
+        if (filefd < -1 || fstat(filefd, &filestat) < 0) {
+            // Hard coded length of 404 page in bytes
+            filefd = open("404.html", O_RDONLY);
+            fstat(filefd, &filestat);
+            sprintf(filesizeStr, "%zd", filestat.st_size);
+            sprintf(buffer, "HTTP/1.1 404 Not Found\r\nContent-Length: %s\r\nContent-Type: text/html\r\nConnection: keep-alive\r\n\r\n", filesizeStr);
+            filefp = fopen ("404.html", "r");
         }
         else {
-            filename[j] = buffer[i];
-            ++i; ++j;
+            sprintf(filesizeStr, "%zd", filestat.st_size);
+            filefp = fopen (filename, "r");
+            sprintf(buffer, "HTTP/1.1 200 OK\r\nContent-Length: %s\r\nContent-Type: %s\r\nConnection: keep-alive\r\n\r\n", filesizeStr, contentType);
         }
+        close(filefd);
+
+        write (newsockfd, buffer, strlen(buffer));
+
+        int filesize = filestat.st_size + 1;
+        int bytesRead;
+
+        while (filesize > 0) {
+            bytesRead = fread (buffer, sizeof(char), BUFF_SIZE, filefp);
+            filesize -= BUFF_SIZE;
+            write (newsockfd, buffer, bytesRead);
+        }
+        fclose(filefp);
     }
-    filename[j] = '\0';
-    ++j;
-
-    char filesizeStr[64]; 
-
-    struct stat filestat;
-    int filefd = open(filename, O_RDONLY);
-    FILE *filefp;
-    if (filefd < -1 || fstat(filefd, &filestat) < 0) {
-        // Hard coded length of 404 page in bytes
-        filefd = open("404.html", O_RDONLY);
-        fstat(filefd, &filestat);
-        sprintf(filesizeStr, "%zd", filestat.st_size);
-        sprintf(buffer, "HTTP/1.1 404 Not Found\r\nContent-Length: %s\r\nContent-Type: text/html\r\nConnection: keep-alive\r\n\r\n", filesizeStr);
-        filefp = fopen ("404.html", "r");
-    }
-    else {
-        sprintf(filesizeStr, "%zd", filestat.st_size);
-        filefp = fopen (filename, "r");
-        sprintf(buffer, "HTTP/1.1 200 OK\r\nContent-Length: %s\r\nContent-Type: %s\r\nConnection: keep-alive\r\n\r\n", filesizeStr, contentType);
-    }
-    close(filefd);
-
-    write (newsockfd, buffer, strlen(buffer));
-
-    int filesize = filestat.st_size + 1;
-    int bytesRead;
-
-    while (filesize > 0) {
-        bytesRead = fread (buffer, sizeof(char), BUFF_SIZE, filefp);
-        filesize -= BUFF_SIZE;
-        write (newsockfd, buffer, bytesRead);
-    }
-    fclose(filefp);
 
     close(newsockfd);  // close connection
     close(sockfd);
