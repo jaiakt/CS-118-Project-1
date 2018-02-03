@@ -59,7 +59,9 @@ void getContentType(char *buffer, char *contentType, char *filename, char *filet
         // printf("%c\n", buffer[j]);
     // }
     memcpy(filetype, buffer + filetypeIdx, (lastSpaceIdx - filetypeIdx));
+    filetype[lastSpaceIdx - filetypeIdx] = '\0';
     memcpy(filename, buffer + filenameIdx, (lastSpaceIdx - filenameIdx));
+    filename[lastSpaceIdx - filenameIdx] = '\0';
     // printf("Filetype is %s\n", filetype);
 
     for (int k = 0; k < strlen(filetype); k++) {
@@ -166,7 +168,8 @@ int main(int argc, char *argv[])
             ++i; ++j;
         }
     }
-
+    filename[j] = '\0';
+    ++j;
 
     char filesizeStr[64]; 
 
