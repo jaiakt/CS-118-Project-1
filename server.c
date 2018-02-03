@@ -69,19 +69,19 @@ void getContentType(char *buffer, char *contentType, char *filename, char *filet
     }
     // printf("Lowered filetype is %s\n", filetype);
     if (strcmp(filetype, "html") == 0 || strcmp(filetype, "htm") == 0) {
-        printf("I am an %s file!\n", filetype);
+        //printf("I am an %s file!\n", filetype);
         sprintf(contentType, "text/html");
     }
     else if (strcmp(filetype, "jpg") == 0 || strcmp(filetype, "jpeg") == 0) {
-        printf("I am a %s file!\n", filetype);
+        //printf("I am a %s file!\n", filetype);
         sprintf(contentType, "image/jpeg");
     }
     else if (strcmp(filetype, "gif") == 0) {
-        printf("I am a %s file!\n", filetype);
+        //printf("I am a %s file!\n", filetype);
         sprintf(contentType, "image/gif");
     }
     else {
-        printf("I don't support your filetype!\n");
+        //printf("I don't support your filetype!\n");
         sprintf(contentType, "application/octet-stream");
     }
 }
@@ -146,9 +146,9 @@ int main(int argc, char *argv[])
     if (ret == 0) {
         // printf("This is a GET request.\n");
         getContentType(buffer, contentType, filename, fileExt);
-        printf("buffer is %s, contentType is %s, filename is %s, fileExt is %s\n", buffer, contentType, filename, fileExt);
+        //printf("buffer is %s, contentType is %s, filename is %s, fileExt is %s\n", buffer, contentType, filename, fileExt);
     } else {
-        printf("This is not a GET request.\n");
+        //printf("This is not a GET request.\n");
     }
 
     //reply to client
@@ -176,25 +176,17 @@ int main(int argc, char *argv[])
     struct stat filestat;
     int filefd = open(filename, O_RDONLY);
     FILE *filefp;
-    printf("1");
     if (filefd < -1 || fstat(filefd, &filestat) < 0) {
-        printf("2");
         // Hard coded length of 404 page in bytes
         strcpy (buffer, "HTTP/1.1 404 Not Found\r\nContent-Length: 1246\r\nContent-Type: text/html\r\nConnection: keep-alive\r\n\r\n");
         filefp = fopen ("400.html", "r");
     }
     else {
-        printf("3");
         sprintf(filesizeStr, "%zd", filestat.st_size);
-            printf("4");
-
         filefp = fopen (filename, "r");
-            printf("5");
-
         sprintf(buffer, "HTTP/1.1 200 OK\r\nContent-Length: %s\r\nContent-Type: %s\r\nConnection: keep-alive\r\n\r\n", filesizeStr, contentType);
     }
     close(filefd);
-    printf("%s", buffer);
 
     write (newsockfd, buffer, strlen(buffer));
 
