@@ -152,7 +152,6 @@ int main(int argc, char *argv[])
     //reply to client
     // n = write(newsockfd, "I got your message", 18);
     // if (n < 0) error("ERROR writing to socket");
-
     strcpy(buffer, filename);
 
     int i = 0;
@@ -168,19 +167,27 @@ int main(int argc, char *argv[])
         }
     }
 
-    char filesizeStr[7]; 
+
+    char filesizeStr[64]; 
 
     struct stat filestat;
     int filefd = open(filename, O_RDONLY);
     FILE *filefp;
+    printf("1");
     if (filefd < -1 || fstat(filefd, &filestat) < 0) {
+        printf("2");
         // Hard coded length of 404 page in bytes
         strcpy (buffer, "HTTP/1.1 404 Not Found\r\nContent-Length: 1246\r\nContent-Type: text/html\r\nConnection: keep-alive\r\n\r\n");
         filefp = fopen ("400.html", "r");
     }
     else {
+        printf("3");
         sprintf(filesizeStr, "%zd", filestat.st_size);
+            printf("4");
+
         filefp = fopen (filename, "r");
+            printf("5");
+
         sprintf(buffer, "HTTP/1.1 200 OK\r\nContent-Length: %s\r\nContent-Type: %s\r\nConnection: keep-alive\r\n\r\n", filesizeStr, contentType);
     }
     close(filefd);
